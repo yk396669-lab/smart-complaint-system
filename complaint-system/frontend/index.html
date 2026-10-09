@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart AI Complaint Management & Prediction System</title>
+    <!-- Leaflet CSS for Hotspot Mapping -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #f97316;
+            --primary-dark: #ea580c;
+            --primary-light: #ffedd5;
+            --secondary: #0f172a;
+            --secondary-light: #1e293b;
+            --accent: #6366f1;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --radius: 10px;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background: var(--bg); color: var(--text-main); min-height: 100vh; }
+
+        /* Navigation */
+        .navbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0.85rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+        }
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+        .nav-brand i { color: var(--primary); font-size: 1.4rem; }
+        .nav-user { display: flex; align-items: center; gap: 1rem; }
+        .user-pill {
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            padding: 0.35rem 0.85rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Layout */
+        .container { max-width: 1300px; margin: 0 auto; padding: 2rem; }
+        .page { display: none; }
+        .page.active { display: block; }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.65rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--secondary); color: white; }
+        .btn-secondary:hover { background: var(--secondary-light); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover { background: #f1f5f9; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { opacity: 0.9; }
+        .btn-sm { padding: 0.4rem 0.75rem; font-size: 0.8rem; border-radius: 6px; }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Auth Screen */
+        .auth-container {
+            max-width: 440px;
+            margin: 4rem auto;
+            background: var(--surface);
+            padding: 2.5rem;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+            border: 1px solid var(--border);
+        }
+        .auth-tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 1.5rem; }
+        .auth-tab {
+            flex: 1;
+            padding: 0.75rem;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-muted);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+        .auth-tab.active { color: var(--primary); border-color: var(--primary); }
+
+        /* Form elements */
+        .form-group { margin-bottom: 1.2rem; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--secondary); }
+        .form-control {
+            width: 100%;
+            padding: 0.7rem 0.9rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: #fff;
+            transition: border-color 0.2s;
+        }
+        .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15); }
+        textarea.form-control { resize: vertical; min-height: 90px; }
+
+        /* Navigation Tabs for Dashboard */
+        .tabs { display: flex; gap: 0.75rem; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .tab {
+            padding: 0.75rem 1.25rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .tab.active { color: var(--primary); border-color: var(--primary); }
+
+        /* Stat Grid */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 1.25rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+        .stat-val { font-size: 1.5rem; font-weight: 700; color: var(--secondary); }
+        .stat-lbl { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .badge-open { background: #e0f2fe; color: #0369a1; }
+        .badge-progress { background: #fef3c7; color: #b45309; }
+        .badge-resolved { background: #dcfce7; color: #15803d; }
+        .badge-rejected { background: #fee2e2; color: #b91c1c; }
+        .badge-fake { background: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
+        .badge-repeat { background: #fef08a; color: #854d0e; border: 1px solid #facc15; }
+        .badge-legit { background: #dcfce7; color: #166534; }
+
+        /* Tables */
+        .table-responsive { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; background: var(--surface); text-align: left; font-size: 0.88rem; }
+        th { background: #f8fafc; padding: 0.85rem 1rem; font-weight: 600; color: var(--secondary); border-bottom: 1px solid var(--border); }
+        td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+        tr:hover td { background: #fdfdfd; }
+
+        /* Alert notifications */
+        .alert {
+            padding: 0.9rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .alert.show { display: flex; }
+        .alert-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+        .alert-danger { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .alert-warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+
+        /* ML Real-Time Box */
+        .ml-preview-box {
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 0.85rem;
+            margin-top: 0.5rem;
+            font-size: 0.82rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Map styling */
+        #hotspotMap { height: 420px; width: 100%; border-radius: var(--radius); z-index: 10; }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--surface);
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            padding: 1.75rem;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+            animation: modalIn 0.2s ease-out;
+        }
+        @keyframes modalIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* Star Rating */
+        .star-rating { display: flex; gap: 0.4rem; font-size: 1.6rem; color: #cbd5e1; cursor: pointer; margin-bottom: 0.85rem; }
+        .star-rating .fa-star.active { color: #f59e0b; }
+
+        /* Description text display */
+        .desc-text {
+            color: #334155;
+            line-height: 1.45;
+            max-width: 280px;
+            word-break: break-word;
+        }
+
+        /* Filter bar */
+        .filter-bar {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <i class="fa-solid fa-brain-circuit"></i>
+            <span>Smart Complaint AI</span>
+        </div>
+        <div class="nav-user" id="navUserSection" style="display: none;">
+            <div class="user-pill">
+                <i class="fa-solid fa-user-circle"></i>
+                <span id="navUserName">User</span>
+                <span style="opacity: 0.6;">|</span>
+                <span id="navUserRole">Student</span>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="logout()">
+                <i class="fa-solid fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </nav>
+
+    <!-- AUTH PAGE -->
+    <div id="authPage" class="page active">
+        <div class="auth-container">
+            <div class="auth-tabs">
+                <div class="auth-tab active" id="loginTabBtn" onclick="switchAuthMode('login')">Login</div>
+                <div class="auth-tab" id="registerTabBtn" onclick="switchAuthMode('register')">Register</div>
+            </div>
+
+            <div id="authAlert" class="alert"></div>
+
+            <!-- Login Form -->
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="loginEmail" class="form-control" placeholder="admin@hostel.com or student" required value="admin@hostel.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required value="admin123">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fa-solid fa-arrow-right-to-bracket"></i> Login to Portal
+                </button>
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 1rem; text-align: center;">
+                    Demo Admin: <code>admin@hostel.com</code> / <code>admin123</code><br>
+                    Demo Student: <code>rahul@student.com</code> / <code>pass123</code>
+                </div>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" onsubmit="handleRegister(event)" style="display: none;">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="regName" class="form-control" placeholder="John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="regEmail" class="form-control" placeholder="john@student.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="regPassword" class="form-control" placeholder="Create password" required>
+                </div>
+                <div class="form-group">
+                    <label>Account Role</label>
+                    <select id="regRole" class="form-control" onchange="toggleHostelField(this.value)">
+                        <option value="student">Student</option>
+                        <option value="admin">Administrator / Warden</option>
+                    </select>
+                </div>
+                <div class="form-group" id="regHostelGroup">
+                    <label>Hostel Block & Room</label>
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 0.5rem;">
+                        <select id="regHostel" class="form-control">
+                            <option value="Hostel A">Hostel A</option>
+                            <option value="Hostel B">Hostel B</option>
+                            <option value="Hostel C">Hostel C</option>
+                            <option value="Hostel D">Hostel D</option>
+                        </select>
+                        <input type="text" id="regRoom" class="form-control" placeholder="Room #">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fa-solid fa-user-plus"></i> Create Account
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- STUDENT DASHBOARD -->
+    <div id="studentPage" class="page container">
+        <div class="tabs">
+            <div class="tab active" onclick="switchStudentTab('submit')">
+                <i class="fa-solid fa-pen-to-square"></i> File New Complaint
+            </div>
+            <div class="tab" onclick="switchStudentTab('my-complaints')">
+                <i class="fa-solid fa-list-check"></i> My Complaints & Status
+            </div>
+        </div>
+
+        <div id="studentAlert" class="alert"></div>
+
+        <!-- Submit Complaint Tab -->
+        <div id="tabSubmitComplaint" class="card">
+            <h2 style="font-size: 1.3rem; margin-bottom: 0.5rem; color: var(--secondary);">
+                Submit Grievance / Maintenance Request
+            </h2>
+            <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+                Our AI model automatically verifies legitimate requests and detects repetitive or spam tickets.
+            </p>
+
+            <form id="complaintForm" onsubmit="handleComplaintSubmit(event)">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                    <div class="form-group">
+                        <label>Category <span style="color:red">*</span></label>
+                        <select id="compCategory" class="form-control" required onchange="triggerMLCheck()">
+                            <option value="Plumbing">Plumbing (Water, Pipe, Tap, Washroom)</option>
+                            <option value="Electrical">Electrical (Fan, Socket, Light, Geyser)</option>
+                            <option value="Cleanliness">Cleanliness & Hygiene (Dustbin, Corridor)</option>
+                            <option value="Furniture">Furniture & Carpentry (Table, Chair, Bed)</option>
+                            <option value="Internet">Internet / Wi-Fi Network</option>
+                            <option value="Pest Control">Pest Control (Insects, Termites)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Complaint Location / Room <span style="color:red">*</span></label>
+                        <input type="text" id="compLocation" class="form-control" placeholder="e.g. Hostel A - Room 204 or 2nd Floor Washroom" required onblur="triggerMLCheck()">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Urgency / Severity</label>
+                        <select id="compSeverity" class="form-control">
+                            <option value="Low">Low - Minor issue</option>
+                            <option value="Medium" selected>Medium - Normal priority</option>
+                            <option value="High">High - Impairing daily routine</option>
+                            <option value="Critical">Critical - Safety risk / Water flooding</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Detailed Description <span style="color:red">*</span></label>
+                    <textarea id="compDescription" class="form-control" placeholder="Clearly describe the problem (e.g. Water leaking continuously from bathroom tap causing flooding)..." required oninput="triggerMLCheck()"></textarea>
+                    
+                    <!-- Live ML Inspection Indicator -->
+                    <div id="mlRealtimePreview" class="ml-preview-box">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fa-solid fa-microchip" style="color: var(--accent);"></i>
+                            <span id="mlStatusText">AI Model: Ready to analyze complaint legitimacy</span>
+                        </div>
+                        <span id="mlStatusBadge" class="badge badge-legit">Verified</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <i class="fa-solid fa-paper-plane"></i> Submit Complaint
+                </button>
+            </form>
+        </div>
+
+        <!-- My Complaints Tab -->
+        <div id="tabMyComplaints" style="display: none;">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2 style="font-size: 1.25rem; color: var(--secondary);">My Submitted Complaints</h2>
+                    <button class="btn btn-outline btn-sm" onclick="loadMyComplaints()">
+                        <i class="fa-solid fa-rotate"></i> Refresh
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table id="myComplaintsTable">
+                        <thead>
+                            <tr>
+                                <th>Ticket ID</th>
+                                <th>Category & Location</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                <th>AI Detection</th>
+                                <th>Estimated Cost</th>
+                                <th>Action / Review</th>
+                            </tr>
+                        </thead>
+                        <tbody id="myComplaintsBody">
+                            <tr><td colspan="7" style="text-align:center; padding: 2rem;">Loading your tickets...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN DASHBOARD -->
+    <div id="adminPage" class="page container">
+        <!-- Stat Cards -->
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #e0f2fe; color: #0284c7;"><i class="fa-solid fa-inbox"></i></div>
+                <div><div class="stat-val" id="statTotal">0</div><div class="stat-lbl">Total Tickets</div></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #fef3c7; color: #d97706;"><i class="fa-solid fa-clock"></i></div>
+                <div><div class="stat-val" id="statOpen">0</div><div class="stat-lbl">Pending & In-Progress</div></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #dcfce7; color: #16a34a;"><i class="fa-solid fa-circle-check"></i></div>
+                <div><div class="stat-val" id="statResolved">0</div><div class="stat-lbl">Resolved</div></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #fee2e2; color: #dc2626;"><i class="fa-solid fa-robot"></i></div>
+                <div><div class="stat-val" id="statFake">0</div><div class="stat-lbl">Fake Flagged</div></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #fef08a; color: #ca8a04;"><i class="fa-solid fa-copy"></i></div>
+                <div><div class="stat-val" id="statRepeat">0</div><div class="stat-lbl">Repeat Tickets</div></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #f3e8ff; color: #9333ea;"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                <div><div class="stat-val" id="statCost">₹0</div><div class="stat-lbl">Est. Maintenance</div></div>
+            </div>
+        </div>
+
+        <!-- Admin Navigation Tabs -->
+        <div class="tabs">
+            <div class="tab active" onclick="switchAdminTab('all-complaints')">
+                <i class="fa-solid fa-table-list"></i> All Complaints & Resolution
+            </div>
+            <div class="tab" onclick="switchAdminTab('hotspots')">
+                <i class="fa-solid fa-map-location-dot"></i> Hotspot Geospatial Mapping
+            </div>
+            <div class="tab" onclick="switchAdminTab('forecast')">
+                <i class="fa-solid fa-chart-line"></i> Cost & Volume Forecasting
+            </div>
+            <div class="tab" onclick="switchAdminTab('reviews')">
+                <i class="fa-solid fa-star-half-stroke"></i> Student Reviews & Feedback
+            </div>
+        </div>
+
+        <div id="adminAlert" class="alert"></div>
+
+        <!-- 1. All Complaints Tab -->
+        <div id="tabAdminComplaints" class="card">
+            <div class="filter-bar">
+                <input type="text" id="adminSearch" class="form-control" style="max-width: 260px;" placeholder="Search keyword or room..." onkeyup="filterAdminComplaints()">
+                <select id="filterStatus" class="form-control" style="max-width: 160px;" onchange="filterAdminComplaints()">
+                    <option value="">All Statuses</option>
+                    <option value="Open">Open</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Resolved">Resolved</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+                <select id="filterCategory" class="form-control" style="max-width: 160px;" onchange="filterAdminComplaints()">
+                    <option value="">All Categories</option>
+                    <option value="Plumbing">Plumbing</option>
+                    <option value="Electrical">Electrical</option>
+                    <option value="Cleanliness">Cleanliness</option>
+                    <option value="Furniture">Furniture</option>
+                    <option value="Internet">Internet</option>
+                </select>
+                <select id="filterAIFlags" class="form-control" style="max-width: 180px;" onchange="filterAdminComplaints()">
+                    <option value="">All AI Classifications</option>
+                    <option value="fake">Fake / Spam Only</option>
+                    <option value="repeat">Repeat Tickets Only</option>
+                </select>
+                <button class="btn btn-outline btn-sm" onclick="loadAdminComplaints()">
+                    <i class="fa-solid fa-rotate"></i> Reload
+                </button>
+            </div>
+
+            <!-- Fix User Bug: Notice DESCRIPTION column is fully visible and displayed! -->
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID & Date</th>
+                            <th>Student & Hostel</th>
+                            <th>Category & Location</th>
+                            <!-- FIXED: Explicit Description column -->
+                            <th style="min-width: 250px;">Complaint Description</th>
+                            <th>AI Flags</th>
+                            <th>Est. Cost</th>
+                            <th>Status & Update</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminComplaintsBody">
+                        <tr><td colspan="7" style="text-align:center; padding: 2rem;">Loading complaints...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 2. Hotspots Tab -->
+        <div id="tabAdminHotspots" class="card" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <h2 style="font-size: 1.25rem; color: var(--secondary);">Hostel Infrastructure Hotspot Map</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">
+                        Pinpoint problem clusters, high-risk buildings, and recurrent infrastructure failure points.
+                    </p>
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="loadHotspots()">
+                    <i class="fa-solid fa-arrows-rotate"></i> Refresh Hotspots
+                </button>
+            </div>
+
+            <div id="hotspotMap"></div>
+
+            <div style="margin-top: 1.5rem;">
+                <h3 style="font-size: 1.05rem; margin-bottom: 0.75rem; color: var(--secondary);">Hotspot Breakdown</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Hostel / Location</th>
+                                <th>Total Complaints</th>
+                                <th>Open Issues</th>
+                                <th>Repeat Count</th>
+                                <th>Top Offending Category</th>
+                                <th>Risk Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hotspotTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Cost Forecasting Tab -->
+        <div id="tabAdminForecast" class="card" style="display: none;">
+            <h2 style="font-size: 1.25rem; color: var(--secondary); margin-bottom: 0.5rem;">
+                Predictive Maintenance Budget & Volume Forecast (ML Regression)
+            </h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+                Trained on historical monthly incidence and repair expenses to forecast upcoming budget requirements.
+            </p>
+
+            <div class="table-responsive" style="margin-bottom: 2rem;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Forecast Month</th>
+                            <th>Predicted Complaint Volume</th>
+                            <th>Forecasted Maintenance Budget (INR)</th>
+                            <th>Estimated Budget Range (Min - Max)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="forecastTableBody"></tbody>
+                </table>
+            </div>
+
+            <h3 style="font-size: 1.05rem; margin-bottom: 0.75rem; color: var(--secondary);">Standard Category Baseline Cost Matrix</h3>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Estimated Standard Unit Cost</th>
+                            <th>Preventive Action Recommended</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categoryCostBody">
+                        <tr><td>Plumbing</td><td>₹2,500 / ticket</td><td>Bi-weekly pipeline pressure checks</td></tr>
+                        <tr><td>Electrical</td><td>₹3,000 / ticket</td><td>Wing MCB and capacitor inspections</td></tr>
+                        <tr><td>Cleanliness</td><td>₹800 / ticket</td><td>Sanitation staff rotation schedule</td></tr>
+                        <tr><td>Furniture</td><td>₹1,500 / ticket</td><td>End-of-semester structural repair</td></tr>
+                        <tr><td>Internet</td><td>₹500 / ticket</td><td>Access Point firmware updates</td></tr>
+                        <tr><td>Pest Control</td><td>₹2,000 / ticket</td><td>Monthly hostel fogging cycle</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 4. Reviews Tab -->
+        <div id="tabAdminReviews" class="card" style="display: none;">
+            <h2 style="font-size: 1.25rem; color: var(--secondary); margin-bottom: 0.5rem;">
+                Post-Resolution Student Feedback & Sentiment Analysis
+            </h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+                Verified reviews collected from students once their complaints are marked 'Resolved'.
+            </p>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ticket ID</th>
+                            <th>Student</th>
+                            <th>Rating</th>
+                            <th>Feedback Comment</th>
+                            <th>NLP Sentiment</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminReviewsBody">
+                        <tr><td colspan="6" style="text-align:center; padding: 2rem;">No reviews submitted yet</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- REVIEW MODAL FOR STUDENTS -->
+    <div id="reviewModal" class="modal-overlay">
+        <div class="modal">
+            <h3 style="margin-bottom: 0.5rem; color: var(--secondary);">Rate Resolution Quality</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                How satisfied are you with the resolution of Ticket #<span id="reviewModalTicketId">0</span>?
+            </p>
+
+            <div class="star-rating" id="modalStarRating">
+                <i class="fa-solid fa-star active" onclick="setRating(1)"></i>
+                <i class="fa-solid fa-star active" onclick="setRating(2)"></i>
+                <i class="fa-solid fa-star active" onclick="setRating(3)"></i>
+                <i class="fa-solid fa-star active" onclick="setRating(4)"></i>
+                <i class="fa-solid fa-star active" onclick="setRating(5)"></i>
+            </div>
+
+            <div class="form-group">
+                <label>Your Feedback / Comment</label>
+                <textarea id="reviewComment" class="form-control" placeholder="The technician came on time and fixed the tap properly..."></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem;">
+                <button class="btn btn-outline" onclick="closeReviewModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitReviewAction()">
+                    <i class="fa-solid fa-check"></i> Submit Review
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS for Hotspots -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        const API_BASE = window.location.protocol.startsWith('http') ? `${window.location.origin}/api` : 'http://localhost:5000/api';
+        let currentUser = null;
+        let token = localStorage.getItem('token') || null;
+        let mapInstance = null;
+        let currentReviewRating = 5;
+        let currentReviewTicketId = null;
+        let allAdminComplaints = [];
+
+        // Check login state on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedUser = localStorage.getItem('user');
+            if (token && savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    updateNavUser();
+                    if (currentUser.role === 'admin') {
+                        showPage('adminPage');
+                        initAdminDashboard();
+                    } else {
+                        showPage('studentPage');
+                        loadMyComplaints();
+                    }
+                } catch(e) {
+                    logout();
+                }
+            }
+        });
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        function switchAuthMode(mode) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            if (mode === 'login') {
+                document.getElementById('loginTabBtn').classList.add('active');
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('registerForm').style.display = 'none';
+            } else {
+                document.getElementById('registerTabBtn').classList.add('active');
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('registerForm').style.display = 'block';
+            }
+        }
+
+        function toggleHostelField(role) {
+            document.getElementById('regHostelGroup').style.display = role === 'student' ? 'block' : 'none';
+        }
+
+        function showAlert(containerId, message, type='success') {
+            const alertBox = document.getElementById(containerId);
+            if (!alertBox) return;
+            alertBox.className = `alert alert-${type} show`;
+            alertBox.innerHTML = `<i class="fa-solid fa-circle-info"></i> <span>${message}</span>`;
+            setTimeout(() => { alertBox.classList.remove('show'); }, 5000);
+        }
+
+        // AUTH
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Login failed');
+
+                token = data.token;
+                currentUser = data.user;
+                localStorage.setItem('token', token);
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                updateNavUser();
+
+                if (currentUser.role === 'admin') {
+                    showPage('adminPage');
+                    initAdminDashboard();
+                } else {
+                    showPage('studentPage');
+                    loadMyComplaints();
+                }
+            } catch (err) {
+                showAlert('authAlert', err.message, 'danger');
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+            const role = document.getElementById('regRole').value;
+            const hostel = document.getElementById('regHostel').value;
+            const room_number = document.getElementById('regRoom').value.trim();
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, role, hostel, room_number })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Registration failed');
+
+                token = data.token;
+                currentUser = data.user;
+                localStorage.setItem('token', token);
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                updateNavUser();
+
+                if (currentUser.role === 'admin') {
+                    showPage('adminPage');
+                    initAdminDashboard();
+                } else {
+                    showPage('studentPage');
+                    loadMyComplaints();
+                }
+            } catch (err) {
+                showAlert('authAlert', err.message, 'danger');
+            }
+        }
+
+        function updateNavUser() {
+            document.getElementById('navUserSection').style.display = 'flex';
+            document.getElementById('navUserName').textContent = currentUser.name;
+            document.getElementById('navUserRole').textContent = currentUser.role.toUpperCase();
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            token = null;
+            currentUser = null;
+            document.getElementById('navUserSection').style.display = 'none';
+            showPage('authPage');
+        }
+
+        // REAL-TIME FAKE CHECK WHILE TYPING
+        let debounceTimer;
+        function triggerMLCheck() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(async () => {
+                const text = document.getElementById('compDescription').value.trim();
+                const cat = document.getElementById('compCategory').value;
+                const loc = document.getElementById('compLocation').value.trim();
+
+                if (text.length < 5) return;
+
+                try {
+                    const res = await fetch(`${API_BASE}/ml/check-fake`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ description: text, category: cat, location: loc })
+                    });
+                    const d = await res.json();
+                    const statusText = document.getElementById('mlStatusText');
+                    const statusBadge = document.getElementById('mlStatusBadge');
+
+                    if (d.is_fake) {
+                        statusText.innerHTML = `⚠️ <strong style="color:var(--danger)">High probability of fake/spam ticket (${d.confidence})</strong>`;
+                        statusBadge.className = 'badge badge-fake';
+                        statusBadge.textContent = 'Flagged Fake';
+                    } else {
+                        statusText.innerHTML = `✓ AI Verification: <strong style="color:var(--success)">Legitimate Grievance (${d.confidence})</strong>`;
+                        statusBadge.className = 'badge badge-legit';
+                        statusBadge.textContent = 'Authentic';
+                    }
+                } catch(e) {}
+            }, 400);
+        }
+
+        // STUDENT COMPLAINT SUBMISSION
+        async function handleComplaintSubmit(e) {
+            e.preventDefault();
+            const category = document.getElementById('compCategory').value;
+            const location = document.getElementById('compLocation').value.trim();
+            const description = document.getElementById('compDescription').value.trim();
+            const severity = document.getElementById('compSeverity').value;
+
+            try {
+                const res = await fetch(`${API_BASE}/complaints/submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ category, location, description, severity })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Submission failed');
+
+                let msg = '✓ Complaint submitted successfully!';
+                if (data.warning) msg += `<br>${data.warning}`;
+
+                showAlert('studentAlert', msg, data.is_fake ? 'warning' : 'success');
+                document.getElementById('complaintForm').reset();
+                setTimeout(() => { switchStudentTab('my-complaints'); }, 1200);
+            } catch (err) {
+                showAlert('studentAlert', err.message, 'danger');
+            }
+        }
+
+        // LOAD STUDENT COMPLAINTS
+        async function loadMyComplaints() {
+            try {
+                const res = await fetch(`${API_BASE}/complaints/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const tbody = document.getElementById('myComplaintsBody');
+
+                if (!data.complaints || data.complaints.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem;">No complaints registered yet.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.complaints.map(c => {
+                    const statusClass = c.status === 'Open' ? 'open' : c.status === 'In Progress' ? 'progress' : c.status === 'Resolved' ? 'resolved' : 'rejected';
+                    
+                    let aiBadges = '';
+                    if (c.is_fake) {
+                        aiBadges += `<span class="badge badge-fake">Fake (${Math.round(c.fake_score*100)}%)</span> `;
+                    }
+                    if (c.is_repeat) {
+                        aiBadges += `<span class="badge badge-repeat">Repeat (#${c.original_complaint_id})</span>`;
+                    }
+                    if (!c.is_fake && !c.is_repeat) {
+                        aiBadges = `<span class="badge badge-legit">Verified</span>`;
+                    }
+
+                    // Review Action Button if Resolved
+                    let actionHtml = `<span style="color:var(--text-muted); font-size:0.8rem;">Pending resolution</span>`;
+                    if (c.status === 'Resolved') {
+                        if (c.has_review) {
+                            actionHtml = `<span class="badge badge-resolved"><i class="fa-solid fa-check-double"></i> Reviewed</span>`;
+                        } else {
+                            actionHtml = `<button class="btn btn-primary btn-sm" onclick="openReviewModal(${c.id})"><i class="fa-solid fa-star"></i> Rate Work</button>`;
+                        }
+                    }
+
+                    return `
+                        <tr>
+                            <td><strong>#${c.id}</strong><br><small style="color:var(--text-muted)">${(c.created_at || '').substring(0, 10)}</small></td>
+                            <td><strong>${c.category}</strong><br><small style="color:var(--text-muted);">${c.location}</small></td>
+                            <td class="desc-text">${c.description}</td>
+                            <td><span class="badge badge-${statusClass}">${c.status}</span></td>
+                            <td>${aiBadges}</td>
+                            <td>₹${c.estimated_cost || 0}</td>
+                            <td>${actionHtml}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function switchStudentTab(tab) {
+            document.querySelectorAll('#studentPage .tab').forEach(t => t.classList.remove('active'));
+            if (tab === 'submit') {
+                event.currentTarget.classList.add('active');
+                document.getElementById('tabSubmitComplaint').style.display = 'block';
+                document.getElementById('tabMyComplaints').style.display = 'none';
+            } else {
+                event.currentTarget.classList.add('active');
+                document.getElementById('tabSubmitComplaint').style.display = 'none';
+                document.getElementById('tabMyComplaints').style.display = 'block';
+                loadMyComplaints();
+            }
+        }
+
+        // REVIEWS MODAL
+        function openReviewModal(ticketId) {
+            currentReviewTicketId = ticketId;
+            document.getElementById('reviewModalTicketId').textContent = ticketId;
+            setRating(5);
+            document.getElementById('reviewComment').value = '';
+            document.getElementById('reviewModal').classList.add('active');
+        }
+
+        function closeReviewModal() {
+            document.getElementById('reviewModal').classList.remove('active');
+        }
+
+        function setRating(rating) {
+            currentReviewRating = rating;
+            const stars = document.querySelectorAll('#modalStarRating i');
+            stars.forEach((s, idx) => {
+                if (idx < rating) s.classList.add('active');
+                else s.classList.remove('active');
+            });
+        }
+
+        async function submitReviewAction() {
+            const comment = document.getElementById('reviewComment').value.trim();
+            try {
+                const res = await fetch(`${API_BASE}/complaints/${currentReviewTicketId}/review`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ rating: currentReviewRating, comment })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to submit review');
+
+                closeReviewModal();
+                showAlert('studentAlert', `✓ Review submitted! Sentiment: ${data.review.sentiment}`, 'success');
+                loadMyComplaints();
+            } catch(e) {
+                alert(e.message);
+            }
+        }
+
+        // ADMIN CONTROLS
+        async function initAdminDashboard() {
+            loadDashboardStats();
+            loadAdminComplaints();
+        }
+
+        async function loadDashboardStats() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/dashboard`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.stats) {
+                    document.getElementById('statTotal').textContent = data.stats.total;
+                    document.getElementById('statOpen').textContent = data.stats.open + data.stats.in_progress;
+                    document.getElementById('statResolved').textContent = data.stats.resolved;
+                    document.getElementById('statFake').textContent = data.stats.fake_count;
+                    document.getElementById('statRepeat').textContent = data.stats.repeat_count;
+                    document.getElementById('statCost').textContent = `₹${data.stats.total_estimated_cost.toLocaleString()}`;
+                }
+            } catch(e) {}
+        }
+
+        async function loadAdminComplaints() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/complaints?per_page=100`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                allAdminComplaints = data.complaints || [];
+                renderAdminComplaints(allAdminComplaints);
+            } catch(e) {}
+        }
+
+        function renderAdminComplaints(complaints) {
+            const tbody = document.getElementById('adminComplaintsBody');
+            if (!complaints || complaints.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem;">No matching complaints found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = complaints.map(c => {
+                let aiFlags = '';
+                if (c.is_fake) {
+                    aiFlags += `<span class="badge badge-fake">Fake (${Math.round(c.fake_score*100)}%)</span><br>`;
+                }
+                if (c.is_repeat) {
+                    aiFlags += `<span class="badge badge-repeat">Repeat (${c.repeat_count || 1}x)</span>`;
+                }
+                if (!c.is_fake && !c.is_repeat) {
+                    aiFlags = `<span class="badge badge-legit">Verified</span>`;
+                }
+
+                return `
+                    <tr>
+                        <td><strong>#${c.id}</strong><br><small style="color:var(--text-muted);">${(c.created_at || '').substring(0, 10)}</small></td>
+                        <td><strong>${c.user_name}</strong><br><small style="color:var(--text-muted);">${c.hostel || 'General'}</small></td>
+                        <td><strong>${c.category}</strong><br><small style="color:var(--text-muted);">${c.location}</small></td>
+                        <!-- USER BUG FIX: FULL DESCRIPTION DISPLAY -->
+                        <td class="desc-text">
+                            <strong>${c.description}</strong>
+                            ${c.admin_notes ? `<div style="margin-top:0.35rem; font-size:0.75rem; color:var(--accent);"><em>Admin Note: ${c.admin_notes}</em></div>` : ''}
+                        </td>
+                        <td>${aiFlags}</td>
+                        <td>₹${c.estimated_cost || 0}</td>
+                        <td>
+                            <select class="form-control" style="font-size:0.8rem; padding:0.3rem;" onchange="updateTicketStatus(${c.id}, this.value)">
+                                <option value="Open" ${c.status === 'Open' ? 'selected' : ''}>Open</option>
+                                <option value="In Progress" ${c.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                                <option value="Resolved" ${c.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
+                                <option value="Rejected" ${c.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
+                            </select>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterAdminComplaints() {
+            const search = document.getElementById('adminSearch').value.toLowerCase();
+            const status = document.getElementById('filterStatus').value;
+            const cat = document.getElementById('filterCategory').value;
+            const flag = document.getElementById('filterAIFlags').value;
+
+            const filtered = allAdminComplaints.filter(c => {
+                const matchSearch = (c.description.toLowerCase().includes(search) || c.location.toLowerCase().includes(search) || c.user_name.toLowerCase().includes(search));
+                const matchStatus = !status || c.status === status;
+                const matchCat = !cat || c.category === cat;
+                let matchFlag = true;
+                if (flag === 'fake') matchFlag = c.is_fake;
+                if (flag === 'repeat') matchFlag = c.is_repeat;
+
+                return matchSearch && matchStatus && matchCat && matchFlag;
+            });
+
+            renderAdminComplaints(filtered);
+        }
+
+        async function updateTicketStatus(id, newStatus) {
+            try {
+                const res = await fetch(`${API_BASE}/admin/complaints/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (res.ok) {
+                    showAlert('adminAlert', `✓ Ticket #${id} status changed to ${newStatus}`, 'success');
+                    loadDashboardStats();
+                }
+            } catch(e) {}
+        }
+
+        // HOTSPOTS
+        async function loadHotspots() {
+            try {
+                const res = await fetch(`${API_BASE}/ml/hotspots`);
+                const data = await res.json();
+                const hotspots = data.hotspots || [];
+
+                // Render Table
+                const tbody = document.getElementById('hotspotTableBody');
+                tbody.innerHTML = hotspots.map(h => `
+                    <tr>
+                        <td><strong>${h.hostel}</strong></td>
+                        <td>${h.total_complaints}</td>
+                        <td><span style="color:var(--warning); font-weight:700;">${h.open_complaints}</span></td>
+                        <td>${h.repeat_complaints}</td>
+                        <td>${h.top_category}</td>
+                        <td><span class="badge" style="background:${h.color}; color:#fff;">${h.risk_level} (${h.risk_score})</span></td>
+                    </tr>
+                `).join('');
+
+                // Render Leaflet Map
+                setTimeout(() => {
+                    if (!mapInstance) {
+                        mapInstance = L.map('hotspotMap').setView([17.2520, 78.4315], 15);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '&copy; OpenStreetMap contributors'
+                        }).addTo(mapInstance);
+                    } else {
+                        mapInstance.invalidateSize();
+                    }
+
+                    hotspots.forEach(h => {
+                        if (h.latitude && h.longitude) {
+                            const circle = L.circleMarker([h.latitude, h.longitude], {
+                                color: h.color,
+                                fillColor: h.color,
+                                fillOpacity: 0.65,
+                                radius: 10 + (h.risk_score / 6)
+                            }).addTo(mapInstance);
+
+                            circle.bindPopup(`
+                                <strong>${h.hostel}</strong><br>
+                                Risk: <span style="color:${h.color}; font-weight:700;">${h.risk_level}</span><br>
+                                Total Issues: ${h.total_complaints}<br>
+                                Primary Concern: ${h.top_category}
+                            `);
+                        }
+                    });
+                }, 300);
+            } catch(e) {}
+        }
+
+        // COST FORECASTING
+        async function loadCostForecast() {
+            try {
+                const res = await fetch(`${API_BASE}/ml/forecast`);
+                const data = await res.json();
+                const forecast = data.forecast?.forecast || [];
+
+                const tbody = document.getElementById('forecastTableBody');
+                tbody.innerHTML = forecast.map(f => `
+                    <tr>
+                        <td><strong>${f.month_name}</strong></td>
+                        <td>${f.predicted_complaints} tickets projected</td>
+                        <td><strong style="color:var(--primary-dark);">₹${f.estimated_cost.toLocaleString()}</strong></td>
+                        <td>₹${f.confidence_interval.min_cost.toLocaleString()} - ₹${f.confidence_interval.max_cost.toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            } catch(e) {}
+        }
+
+        // REVIEWS TAB
+        async function loadAdminReviews() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/reviews`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const tbody = document.getElementById('adminReviewsBody');
+
+                if (!data.reviews || data.reviews.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">No student reviews yet.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.reviews.map(r => {
+                    const sentimentBadge = r.sentiment === 'Positive' ? 'badge-legit' : r.sentiment === 'Negative' ? 'badge-fake' : 'badge-repeat';
+                    const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+
+                    return `
+                        <tr>
+                            <td><strong>#${r.complaint_id}</strong></td>
+                            <td>${r.user_name}</td>
+                            <td style="color:#f59e0b; font-size:1.1rem; letter-spacing:2px;">${stars}</td>
+                            <td class="desc-text">${r.comment || '<em>No comment provided</em>'}</td>
+                            <td><span class="badge ${sentimentBadge}">${r.sentiment || 'Neutral'}</span></td>
+                            <td>${(r.created_at || '').substring(0, 10)}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch(e) {}
+        }
+
+        function switchAdminTab(tab) {
+            document.querySelectorAll('#adminPage .tab').forEach(t => t.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            document.getElementById('tabAdminComplaints').style.display = 'none';
+            document.getElementById('tabAdminHotspots').style.display = 'none';
+            document.getElementById('tabAdminForecast').style.display = 'none';
+            document.getElementById('tabAdminReviews').style.display = 'none';
+
+            if (tab === 'all-complaints') {
+                document.getElementById('tabAdminComplaints').style.display = 'block';
+                loadAdminComplaints();
+            } else if (tab === 'hotspots') {
+                document.getElementById('tabAdminHotspots').style.display = 'block';
+                loadHotspots();
+            } else if (tab === 'forecast') {
+                document.getElementById('tabAdminForecast').style.display = 'block';
+                loadCostForecast();
+            } else if (tab === 'reviews') {
+                document.getElementById('tabAdminReviews').style.display = 'block';
+                loadAdminReviews();
+            }
+        }
+    </script>
+</body>
+</html>
